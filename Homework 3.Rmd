@@ -1,0 +1,116 @@
+---
+title: 'Homework #3'
+author: "Julie Osborne"
+date: "4/21/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+energy_spending<-read_csv('/Users/julieosborne/Desktop/DSP/energy_spending.csv')
+climate_spending<-read_csv('/Users/julieosborne/Desktop/DSP/climate_spending.csv')
+fed_r_d_spending<-read_csv('/Users/julieosborne/Desktop/DSP/fed_r_d_spending.csv')
+```  
+
+##Fed_r_d_spending Dataset  
+
+```{r year_v_gdp}
+ggplot(fed_r_d_spending, aes(x=year, y=gdp))+ geom_point() + ggtitle('Year vs. GDP') + theme(plot.title = element_text(hjust=0.5))
+```
+Over the course of 40+ years, there is a steady growth in GDP. There is a drop in the GDP between 2008 and 2009, which correlates to the 2008 financial crisis that occurred in the United States.  
+
+```{r rd_budget_year_agency}
+most_recent_year<-fed_r_d_spending[fed_r_d_spending$year==max(fed_r_d_spending$year),]
+sorted_most_recent_year<-most_recent_year[order(-most_recent_year$rd_budget),  ] %>%
+  pull(department)
+
+ggplot(fed_r_d_spending, aes(x=year, y=rd_budget, color=department))+ geom_point() +
+  scale_color_discrete(breaks=sorted_most_recent_year) + ggtitle('Year v. Research & Development Budget by US Agency') + ylab('Research & Development Budget')
+```
+This graph shows how much research and development budget each US agency recieved over the course of 40+ years. Over this time period, the Department of Defense (DOD) recieved far more budget compared to all other departments. There was a large spike in budget that the DOD recieved between 2001 and 2005 that can correlate to 9/11, the War in Afghanistan, and the Iraq War, where the US was increase its defense. From approximately, 1990 onward, the Department of Health and Human Services and the National Institute of Health recieved the second and third highest amount of research and development budget. This could be related to the AIDS epidemic and increase in R&D being allocated to find a treatment/cure for it.   
+
+\pagebreak  
+
+##Energy_spending Dataset 
+
+```{r energy_spending}
+most_recent_year_es<-energy_spending[energy_spending$year==max(energy_spending$year),]
+sorted_most_recent_year_es<-most_recent_year_es[order(-most_recent_year_es$energy_spending),  ] %>%
+  pull(department)
+ggplot(energy_spending, aes(x=year, y=energy_spending, color=department)) + geom_point() +
+  scale_color_discrete(breaks=sorted_most_recent_year_es) + ggtitle('Year v. Energy Spending by Sub-agency of Energy Spending') + theme(title = element_text(size=7.5)) + ylab('Energy Spending')
+```
+This graph shows how much energy spending each US sub-agency of Energy Spending had over the course of 20 years. The two sub-agencies that have the the highest energy spending over the span from 1997-2018, is both Atomic Energy Defense and Office of Science R&D. There is a very large gap between these two sub-agencies in comparison to all the other sub-agencies.  
+
+\pagebreak  
+
+##Climate_spending Dataset  
+
+```{r climate_spending}
+most_recent_year_climate<-climate_spending[climate_spending$year==max(climate_spending$year),]
+sorted_most_recent_year_climate<-most_recent_year_climate[order(-most_recent_year_climate$gcc_spending),  ] %>%
+  pull(department)
+ggplot(climate_spending, aes(x=year, y=gcc_spending, color=department)) + geom_point() +
+  scale_color_discrete(breaks=sorted_most_recent_year_climate) + ggtitle('Year v. Global Climate Change Spending by Sub-agency') + ylab('Global Climate Change Spending') + theme(title = element_text(size=8))
+```
+This graph shows how much global climate change spending each US sub-agency of Global Climate Change spending had since 2000. Over this time period, NASA had the highest amount of global climate change spending. A possible reason that NASA has the highest amount is because with the number of satellites it possess, it would allow them to be a leading force in monitoring and contributing to the field of global climate.  
+
+\pagebreak  
+
+#Statistical Analysis 
+
+After looking at the how R&D budgets, energy spending, and global climate change spending varies over time for various departments, the overall sum of budget/spending across all departments will be analyzed to see how it changes over time.  
+```{r sum_rd_budget}
+sum_rd<-fed_r_d_spending %>% group_by(year) %>% summarise(sum_rd_budget = sum(rd_budget))
+mean_gdp<-fed_r_d_spending %>% group_by(year) %>% summarise(mean_gdp = mean(gdp))
+
+ggplot(sum_rd, aes(x=year, y=sum_rd_budget)) + geom_point() + geom_smooth(method='lm') + ylab('Sum of R&D Budget') + ggtitle('Year v. Sum of R&D Budget') + theme(plot.title = element_text(hjust=0.5))
+```
+
+```{r sum_energy_spending }
+sum_energy<-energy_spending %>% group_by(year) %>% 
+  summarise(sum_energy_spending = sum(energy_spending))
+
+ggplot(sum_energy, aes(x=year, y=sum_energy_spending)) + geom_point() + geom_smooth(method='lm') + ylab('Sum of Energy Spending') + ggtitle('Year v. Sum of Energy Spending') + theme(plot.title = element_text(hjust=0.5))
+```
+
+```{r sum_gcc}
+sum_gcc<-climate_spending %>% group_by(year) %>% summarise(sum_gcc_spending = sum(gcc_spending))
+
+ggplot(sum_gcc, aes(x=year, y=sum_gcc_spending)) + geom_point() + geom_smooth(method='lm') + ylab('Sum of Global Climate Change Spending') + ggtitle('Year v. Sum of Global Climate Change Spending') + theme(plot.title = element_text(hjust=0.5))
+```
+For all three measures, R&D budget, energy spending, and global climate change spending, the trendlines indicate an increase in budget/spending over time.  
+```{r rd_energy_gcc, warning=FALSE}
+rd_energy<-merge(sum_rd, sum_energy, by='year', all=T)
+rd_energy_gcc<-merge(rd_energy, sum_gcc, by='year', all=T)
+
+ggplot(rd_energy_gcc, aes(x=year)) + geom_point(aes(y=sum_rd_budget, col='sum_rd_budget')) +
+  geom_point(aes(y=sum_energy_spending, col='sum_energy_spending')) + 
+  geom_point(aes(y=sum_gcc_spending, col='sum_gcc_spending')) + ylab('Dollars') + ggtitle('Year v. Sum of Each Measure') + theme(plot.title = element_text(hjust=0.5))
+```
+This graph plots the sum of R&D budget, energy spending, and global climate change spending over time to see how they compare to each other. All three lines start at a different year, but this correlates to the start year of the corresponding dataset. Of the three measures, the sum of R&D budget far outweighs both the sum of energy spending and the sum of global climate change spending.  
+
+\pagebreak  
+
+The sum of all three measures, will be used in a linear model to see if they are good predictors in measuring GDP. 
+```{r sum_linear_model}
+rd_energy_gcc_gdp<-merge(rd_energy_gcc,mean_gdp, by='year', all=T)
+
+cc_rd_energy_gcc_gdp<-rd_energy_gcc_gdp[complete.cases(rd_energy_gcc_gdp), ]
+
+model_sum<-lm(mean_gdp ~ sum_rd_budget + sum_energy_spending + sum_gcc_spending, 
+               data=cc_rd_energy_gcc_gdp)
+summary(model_sum)
+```
+In this linear model, the only predictor that is statistically significant (at the 5% level) in predicting GDP is sum_energy_spending which has a p-value of `r format.pval(summary(model_sum)$coefficients[3,4])` which is less than 0.05. Also, the $R^{2}$ for this model is `r summary(model_sum)$adj.r.squared` which means `r round(summary(model_sum)$adj.r.squared*100, 2)`% of variation is explained by the model.  
+
+\pagebreak  
+
+A stepwise regression was used to ensure that using these predictors that the model with only eneregy_spending as the predictor was the best model.
+```{r stepwise}
+library(MASS)
+step.model<-stepAIC(model_sum, direction='both', trace=F)
+summary(step.model)
+```
+The stepwise regression confirms that using these predictors, the model with only energy_spending is the best model. Energy_spending is statistically significant with a p-value of `r format.pval(summary(step.model)$coefficients[2,4])` and an $R^{2}$ = `r summary(step.model)$adj.r.squared`.
